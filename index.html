@@ -113,55 +113,93 @@ li{
 
 </div>
 
+<!-- Supabase SDK -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <script>
+// 🔥 CONEXIÓN A SUPABASE
+const supabase = supabase.createClient(
+  "https://hpgyydcwnnxlgccrdsll.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwZ3l5ZGN3bm54bGdjY3Jkc2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MTIwOTUsImV4cCI6MjA4MDM4ODA5NX0.eQ90r1awmyw8wZwvqKQcPu5cbOpCYb6YpzNTFpSn0ns"
+);
+
 let tareas = [];
-let idGlobal = 1;
 
-// AÑADIR INICIO
-function agregarInicio(){
+// 🔥 LEER TAREAS AL INICIAR
+window.onload = async () => {
+    let { data } = await supabase.from("tareas").select("*");
+    tareas = data;
+    render();
+};
+
+// 🔥 AÑADIR TAREA AL INICIO (parent_id = null)
+async function agregarInicio(){
     let txt = tareaInput.value.trim();
     if(txt === "") return;
-    tareas.unshift({ id: idGlobal++, titulo: txt, subs: [] });
+
+    let { data } = await supabase
+        .from("tareas")
+        .insert({ titulo: txt, parent_id: null })
+        .select();
+
+    tareas.unshift(data[0]);
     tareaInput.value = "";
     render();
 }
 
-// AÑADIR FINAL
-function agregarFinal(){
+// 🔥 AÑADIR TAREA AL FINAL
+async function agregarFinal(){
     let txt = tareaInput.value.trim();
     if(txt === "") return;
-    tareas.push({ id: idGlobal++, titulo: txt, subs: [] });
+
+    let { data } = await supabase
+        .from("tareas")
+        .insert({ titulo: txt, parent_id: null })
+        .select();
+
+    tareas.push(data[0]);
     tareaInput.value = "";
     render();
 }
 
-// ELIMINAR INICIO
-function eliminarInicio(){
-    if(tareas.length > 0){
-        tareas.shift();
-        render();
-    }
+// 🔥 ELIMINAR PRIMERA TAREA
+async function eliminarInicio(){
+    if(tareas.length === 0) return;
+
+    let id = tareas[0].id;
+    await supabase.from("tareas").delete().eq("id", id);
+    tareas.shift();
+    render();
 }
 
-// ELIMINAR FINAL
-function eliminarFinal(){
-    if(tareas.length > 0){
-        tareas.pop();
-        render();
-    }
+// 🔥 ELIMINAR ÚLTIMA TAREA
+async function eliminarFinal(){
+    if(tareas.length === 0) return;
+
+    let id = tareas[tareas.length - 1].id;
+    await supabase.from("tareas").delete().eq("id", id);
+    tareas.pop();
+    render();
 }
 
-// AGREGAR SUBTAREA
-function agregarSub(){
+// 🔥 AGREGAR SUBTAREA (parent_id = id de tarea)
+async function agregarSub(){
     let index = tareaSelect.value;
+    let parent = tareas[index];
     let txt = subInput.value.trim();
     if(txt === "") return;
-    tareas[index].subs.push(txt);
+
+    let { data } = await supabase
+        .from("tareas")
+        .insert({ titulo: txt, parent_id: parent.id })
+        .select();
+
+    tareas.push(data[0]);
     subInput.value = "";
     render();
 }
 
-// BUSCAR
+// 🔥 BUSCAR
 function buscar(){
     let txt = buscarInput.value.trim().toLowerCase();
     let lista = document.getElementById("lista");
@@ -172,45 +210,53 @@ function buscar(){
             let li = document.createElement("li");
             li.innerHTML = `✅ [${t.id}] ${t.titulo}`;
 
-            t.subs.forEach(s => {
-                let sub = document.createElement("div");
-                sub.className = "sub";
-                sub.textContent = "↳ " + s;
-                li.appendChild(sub);
-            });
+            // mostrar subtareas
+            tareas
+              .filter(s => s.parent_id === t.id)
+              .forEach(s => {
+                  let sub = document.createElement("div");
+                  sub.className = "sub";
+                  sub.textContent = "↳ " + s.titulo;
+                  li.appendChild(sub);
+              });
 
             lista.appendChild(li);
         }
     });
 }
 
-// LIMPIAR BUSQUEDA
+// 🔥 LIMPIAR BUSQUEDA
 function limpiarBusqueda(){
     buscarInput.value = "";
     render();
 }
 
-// MOSTRAR ÁRBOL
+// 🔥 RENDERIZAR
 function render(){
     let lista = document.getElementById("lista");
     lista.innerHTML = "";
     tareaSelect.innerHTML = "";
 
-    tareas.forEach((t, index) => {
+    let principales = tareas.filter(t => t.parent_id === null);
+
+    principales.forEach(t => {
         let li = document.createElement("li");
         li.innerHTML = `🟡 [${t.id}] ${t.titulo}`;
 
-        t.subs.forEach(s => {
-            let sub = document.createElement("div");
-            sub.className = "sub";
-            sub.textContent = "↳ " + s;
-            li.appendChild(sub);
-        });
+        // subtareas
+        tareas
+          .filter(s => s.parent_id === t.id)
+          .forEach(s => {
+              let sub = document.createElement("div");
+              sub.className = "sub";
+              sub.textContent = "↳ " + s.titulo;
+              li.appendChild(sub);
+          });
 
         lista.appendChild(li);
 
         let op = document.createElement("option");
-        op.value = index;
+        op.value = tareas.indexOf(t);
         op.textContent = t.titulo;
         tareaSelect.appendChild(op);
     });
