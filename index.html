@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>InovAccion</title>
+
+<style>
+body{
+    background: radial-gradient(circle,#2b0000,#000);
+    font-family: Arial, sans-serif;
+    color: gold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.panel{
+    width: 700px;
+    border: 3px solid gold;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 0 30px gold;
+}
+h1{
+    text-shadow: 0 0 12px gold;
+    font-size: 36px;
+}
+h2{
+    margin-top: 25px;
+    text-shadow: 0 0 10px gold;
+}
+.fila{
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+input, select{
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid gold;
+    background: black;
+    color: gold;
+}
+button{
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+}
+.rojo{
+    background: red;
+    color: white;
+}
+.azul{
+    background: #0059ff;
+    color: white;
+}
+ul{
+    list-style: none;
+    padding-left: 0;
+}
+li{
+    border: 1px solid gold;
+    margin-top: 6px;
+    padding: 10px;
+    border-radius: 8px;
+}
+.sub{
+    margin-left: 20px;
+    color: #00ffcc;
+    font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="panel">
+
+<h1>InovAccion</h1>
+
+<div class="fila">
+    <input id="tareaInput" placeholder="Título de tarea">
+    <button class="rojo" onclick="agregarInicio()">AÑADIR INICIO</button>
+    <button class="rojo" onclick="agregarFinal()">AÑADIR FINAL</button>
+</div>
+
+<div class="fila">
+    <button class="rojo" onclick="eliminarInicio()">ELIMINAR INICIO</button>
+    <button class="rojo" onclick="eliminarFinal()">ELIMINAR FINAL</button>
+</div>
+
+<h2>Sub-Tareas</h2>
+
+<div class="fila">
+    <select id="tareaSelect"></select>
+    <input id="subInput" placeholder="Título de la sub-tarea">
+    <button class="azul" onclick="agregarSub()">+ SUB-TAREA</button>
+</div>
+
+<h2>Buscar Tarea</h2>
+
+<div class="fila">
+    <input id="buscarInput" placeholder="ID o texto">
+    <button class="rojo" onclick="buscar()">BUSCAR</button>
+    <button class="rojo" onclick="limpiarBusqueda()">LIMPIAR</button>
+</div>
+
+<h2>Árbol de Tareas</h2>
+<ul id="lista"></ul>
+
+</div>
+
+<script>
+let tareas = [];
+let idGlobal = 1;
+
+// AÑADIR INICIO
+function agregarInicio(){
+    let txt = tareaInput.value.trim();
+    if(txt === "") return;
+    tareas.unshift({ id: idGlobal++, titulo: txt, subs: [] });
+    tareaInput.value = "";
+    render();
+}
+
+// AÑADIR FINAL
+function agregarFinal(){
+    let txt = tareaInput.value.trim();
+    if(txt === "") return;
+    tareas.push({ id: idGlobal++, titulo: txt, subs: [] });
+    tareaInput.value = "";
+    render();
+}
+
+// ELIMINAR INICIO
+function eliminarInicio(){
+    if(tareas.length > 0){
+        tareas.shift();
+        render();
+    }
+}
+
+// ELIMINAR FINAL
+function eliminarFinal(){
+    if(tareas.length > 0){
+        tareas.pop();
+        render();
+    }
+}
+
+// AGREGAR SUBTAREA
+function agregarSub(){
+    let index = tareaSelect.value;
+    let txt = subInput.value.trim();
+    if(txt === "") return;
+    tareas[index].subs.push(txt);
+    subInput.value = "";
+    render();
+}
+
+// BUSCAR
+function buscar(){
+    let txt = buscarInput.value.trim().toLowerCase();
+    let lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    tareas.forEach(t => {
+        if(t.id == txt || t.titulo.toLowerCase().includes(txt)){
+            let li = document.createElement("li");
+            li.innerHTML = `✅ [${t.id}] ${t.titulo}`;
+
+            t.subs.forEach(s => {
+                let sub = document.createElement("div");
+                sub.className = "sub";
+                sub.textContent = "↳ " + s;
+                li.appendChild(sub);
+            });
+
+            lista.appendChild(li);
+        }
+    });
+}
+
+// LIMPIAR BUSQUEDA
+function limpiarBusqueda(){
+    buscarInput.value = "";
+    render();
+}
+
+// MOSTRAR ÁRBOL
+function render(){
+    let lista = document.getElementById("lista");
+    lista.innerHTML = "";
+    tareaSelect.innerHTML = "";
+
+    tareas.forEach((t, index) => {
+        let li = document.createElement("li");
+        li.innerHTML = `🟡 [${t.id}] ${t.titulo}`;
+
+        t.subs.forEach(s => {
+            let sub = document.createElement("div");
+            sub.className = "sub";
+            sub.textContent = "↳ " + s;
+            li.appendChild(sub);
+        });
+
+        lista.appendChild(li);
+
+        let op = document.createElement("option");
+        op.value = index;
+        op.textContent = t.titulo;
+        tareaSelect.appendChild(op);
+    });
+}
+</script>
+
+</body>
+</html>
